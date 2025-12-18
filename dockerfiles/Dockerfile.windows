@@ -63,8 +63,8 @@ set(CMAKE_CXX_FLAGS_INIT "-D_WIN32_WINNT=0x0601 -DWINVER=0x0601")
 
 # Optional: Static linking to avoid DLL dependencies
 # Uncomment if you want fully static binaries
-# set(CMAKE_EXE_LINKER_FLAGS_INIT "-static-libgcc -static-libstdc++ -static")
-# set(CMAKE_SHARED_LINKER_FLAGS_INIT "-static-libgcc -static-libstdc++")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-static-libgcc -static-libstdc++ -static")
+set(CMAKE_SHARED_LINKER_FLAGS_INIT "-static-libgcc -static-libstdc++")
 EOF
 
 ENV CMAKE_TOOLCHAIN_FILE=/opt/toolchain/toolchain.cmake
