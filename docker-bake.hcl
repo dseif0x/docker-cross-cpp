@@ -43,6 +43,12 @@ variable "TARGETS" {
       arch = "i386"
       platform = "linux/386"
     }
+    "linux-s390x" = {
+      dockerfile = "Dockerfile.linux"
+      triple = "s390x-linux-gnu"
+      arch = "s390x"
+      platform = "linux/s390x"
+    }
     "linux-ppc64le" = {
       dockerfile = "Dockerfile.linux"
       triple = "powerpc64le-linux-gnu"
