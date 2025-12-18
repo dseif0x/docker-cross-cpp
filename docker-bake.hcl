@@ -111,7 +111,6 @@ group "default" {
   targets = ["cross-compiler"]
 }
 
-
 target "test" {
   name = "test-${target_name}"
   matrix = {
@@ -129,4 +128,6 @@ target "test" {
     TARGET_ARCHITECTURE = TARGETS[target_name].arch
     MACOS_SDK_VERSION = try(TARGETS[target_name].sdk, "")
   }
+
+  output = ["test_output"]
 }
