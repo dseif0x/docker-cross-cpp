@@ -4,8 +4,11 @@ variable "REGISTRY" {
   default = "ghcr.io/dseif0x"
 }
 
-variable "BUILD_PLATFORMS" {
-  default = ["linux/amd64", "linux/arm64"]
+target "platforms" {
+    platforms = [
+        "linux/amd64",
+        "linux/arm64",
+    ]
 }
 
 variable "TARGETS" {
@@ -52,20 +55,18 @@ variable "TARGETS" {
 }
 
 target "cross-compiler" {
-  name = "${target_name}-from-${replace(build_platform, "/", "-")}"
+  name = "${target_name}"
+  inherits = ["platforms"]
   matrix = {
     target_name = keys(TARGETS)
-    build_platform = BUILD_PLATFORMS
   }
   
   dockerfile = TARGETS[target_name].dockerfile
   tags = ["${REGISTRY}/cross-cpp:target-${target_name}"]
-  platforms = [build_platform]
   
   args = {
-    TARGETPLATFORM = TARGETS[target_name].platform
     CROSS_TRIPLE = TARGETS[target_name].triple
-    TARGET_ARCH = TARGETS[target_name].arch
+    TARGET_ARCHITECTURE = TARGETS[target_name].arch
     MACOS_SDK_VERSION = try(TARGETS[target_name].sdk, "")
   }
   

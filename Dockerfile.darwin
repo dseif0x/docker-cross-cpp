@@ -65,19 +65,15 @@ RUN git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid && \
     cd / && rm -rf /tmp/ldid && \
     ldid --version || echo "ldid installed"
 
-ARG TARGETPLATFORM
 ARG TARGET_ARCH
 ENV TARGET_ARCH=${TARGET_ARCH}
 
 # Create convenience wrappers and CMake integration
 RUN ls -la /opt/osxcross/target/bin/ && \
-    ln -sf /opt/osxcross/target/bin/${TARGET_ARCH}-apple-*-cmake /opt/osxcross/target/bin/cmake && \
-    ln -sf /opt/osxcross/target/bin/${TARGET_ARCH}-apple-*-clang /opt/osxcross/target/bin/clang && \
-    ln -sf /opt/osxcross/target/bin/${TARGET_ARCH}-apple-*-clang++ /opt/osxcross/target/bin/clang++
+    ln -sf /opt/osxcross/target/bin/${TARGET_ARCHITECTURE}-apple-*-cmake /opt/osxcross/target/bin/cmake && \
+    ln -sf /opt/osxcross/target/bin/${TARGET_ARCHITECTURE}-apple-*-clang /opt/osxcross/target/bin/clang && \
+    ln -sf /opt/osxcross/target/bin/${TARGET_ARCHITECTURE}-apple-*-clang++ /opt/osxcross/target/bin/clang++
 
-
-ENV TARGETPLATFORM=${TARGETPLATFORM}
-ENV OSXCROSS_TARGET=${TRIPLE}
 
 WORKDIR /workspace
 
@@ -85,8 +81,7 @@ WORKDIR /workspace
 RUN cat <<'EOF' > /usr/local/bin/show-toolchain
 #!/bin/bash
 echo "=== Cross-Compilation Toolchain Info ==="
-echo "Target Platform: ${TARGETPLATFORM}"
-echo "Target Architecture: ${TARGET_ARCH}"
+echo "Target Architecture: ${TARGET_ARCHITECTURE}"
 echo "OSXCross Triple: ${OSXCROSS_TARGET}"
 echo "macOS SDK Version: ${MACOS_SDK_VERSION}"
 echo ""
@@ -101,8 +96,3 @@ ls -1 /opt/osxcross/target/bin/ | grep "^${OSXCROSS_TARGET}" | head -n 10
 EOF
 
 RUN chmod +x /usr/local/bin/show-toolchain
-
-# Label with build info
-LABEL com.dseif0x.target-platform="${TARGETPLATFORM}"
-LABEL com.dseif0x.target-arch="${TARGET_ARCH}"
-LABEL com.dseif0x.macos-sdk="${MACOS_SDK_VERSION}"

@@ -15,54 +15,53 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ARG CROSS_TRIPLE
-ARG TARGET_ARCH
-ARG TARGETPLATFORM
+ARG TARGET_ARCHITECTURE
 
 # Install cross-compilation toolchain based on architecture
 # Different architectures have different package naming conventions
-RUN if [ "$TARGET_ARCH" = "x86_64" ]; then \
+RUN if [ "$TARGET_ARCHITECTURE" = "x86_64" ]; then \
         apt-get update && apt-get install -y \
             gcc-x86-64-linux-gnu \
             g++-x86-64-linux-gnu \
             binutils-x86-64-linux-gnu \
             libc6-dev-amd64-cross \
             && rm -rf /var/lib/apt/lists/*; \
-    elif [ "$TARGET_ARCH" = "aarch64" ]; then \
+    elif [ "$TARGET_ARCHITECTURE" = "aarch64" ]; then \
         apt-get update && apt-get install -y \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
             binutils-aarch64-linux-gnu \
             libc6-dev-arm64-cross \
             && rm -rf /var/lib/apt/lists/*; \
-    elif [ "$TARGET_ARCH" = "arm" ]; then \
+    elif [ "$TARGET_ARCHITECTURE" = "arm" ]; then \
         apt-get update && apt-get install -y \
             gcc-arm-linux-gnueabihf \
             g++-arm-linux-gnueabihf \
             binutils-arm-linux-gnueabihf \
             libc6-dev-armhf-cross \
             && rm -rf /var/lib/apt/lists/*; \
-    elif [ "$TARGET_ARCH" = "i386" ] || [ "$TARGET_ARCH" = "i686" ]; then \
+    elif [ "$TARGET_ARCHITECTURE" = "i386" ] || [ "$TARGET_ARCHITECTURE" = "i686" ]; then \
         apt-get update && apt-get install -y \
             gcc-i686-linux-gnu \
             g++-i686-linux-gnu \
             binutils-i686-linux-gnu \
             libc6-dev-i386-cross \
             && rm -rf /var/lib/apt/lists/*; \
-    elif [ "$TARGET_ARCH" = "riscv64" ]; then \
+    elif [ "$TARGET_ARCHITECTURE" = "riscv64" ]; then \
         apt-get update && apt-get install -y \
             gcc-riscv64-linux-gnu \
             g++-riscv64-linux-gnu \
             binutils-riscv64-linux-gnu \
             libc6-dev-riscv64-cross \
             && rm -rf /var/lib/apt/lists/*; \
-    elif [ "$TARGET_ARCH" = "ppc64le" ] || [ "$TARGET_ARCH" = "ppc64el" ]; then \
+    elif [ "$TARGET_ARCHITECTURE" = "ppc64le" ] || [ "$TARGET_ARCHITECTURE" = "ppc64el" ]; then \
         apt-get update && apt-get install -y \
             gcc-powerpc64le-linux-gnu \
             g++-powerpc64le-linux-gnu \
             binutils-powerpc64le-linux-gnu \
             libc6-dev-ppc64el-cross \
             && rm -rf /var/lib/apt/lists/*; \
-    elif [ "$TARGET_ARCH" = "s390x" ]; then \
+    elif [ "$TARGET_ARCHITECTURE" = "s390x" ]; then \
         apt-get update && apt-get install -y \
             gcc-s390x-linux-gnu \
             g++-s390x-linux-gnu \
@@ -70,7 +69,7 @@ RUN if [ "$TARGET_ARCH" = "x86_64" ]; then \
             libc6-dev-s390x-cross \
             && rm -rf /var/lib/apt/lists/*; \
     else \
-        echo "ERROR: Unsupported architecture: $TARGET_ARCH" && exit 1; \
+        echo "ERROR: Unsupported architecture: $TARGET_ARCHITECTURE" && exit 1; \
     fi
 
 # Verify compiler exists
@@ -88,7 +87,7 @@ RUN ln -sf /usr/bin/${CROSS_TRIPLE}-gcc /usr/local/bin/cc && \
 RUN mkdir -p /opt/toolchain && \
     cat <<EOF > /opt/toolchain/toolchain.cmake
 set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_PROCESSOR ${TARGET_ARCH})
+set(CMAKE_SYSTEM_PROCESSOR ${TARGET_ARCHITECTURE})
 
 set(CMAKE_C_COMPILER ${CROSS_TRIPLE}-gcc)
 set(CMAKE_CXX_COMPILER ${CROSS_TRIPLE}-g++)
@@ -113,7 +112,6 @@ set(CMAKE_SYSROOT /usr/${CROSS_TRIPLE})
 EOF
 
 ENV CMAKE_TOOLCHAIN_FILE=/opt/toolchain/toolchain.cmake
-ENV TARGETPLATFORM=${TARGETPLATFORM}
 ENV CC=${CROSS_TRIPLE}-gcc
 ENV CXX=${CROSS_TRIPLE}-g++
 ENV AR=${CROSS_TRIPLE}-ar
@@ -126,8 +124,7 @@ WORKDIR /workspace
 RUN cat <<'EOF' > /usr/local/bin/show-toolchain
 #!/bin/bash
 echo "=== Cross-Compilation Toolchain Info ==="
-echo "Target Platform: ${TARGETPLATFORM}"
-echo "Target Architecture: ${TARGET_ARCH}"
+echo "Target Architecture: ${TARGET_ARCHITECTURE}"
 echo "Cross Triple: ${CROSS_TRIPLE}"
 echo ""
 echo "Compilers:"
