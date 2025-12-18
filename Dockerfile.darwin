@@ -1,0 +1,108 @@
+FROM ubuntu:24.04 
+RUN apt update \
+&& apt install -y  \
+    ca-certificates  \
+    gpg \
+    git \
+    wget \
+    software-properties-common \
+    lsb-release \
+    ninja-build \
+    clang lld \
+    pkg-config \
+    cmake \
+    libxml2-dev \
+    libssl-dev \
+    bash \
+    patch \
+    make \
+    tar \
+    xz-utils \
+    bzip2 \
+    gzip \
+    sed \
+    cpio \
+    libbz2-dev \
+    zlib1g-dev \
+    libplist-dev \
+    libplist++-dev
+
+# Setup OSXCross for macOS builds
+WORKDIR /opt
+RUN git clone https://github.com/tpoechtrager/osxcross.git
+
+WORKDIR /opt/osxcross
+
+ARG MACOS_SDK_VERSION=26.1
+
+# Download macOS SDK
+RUN wget -P tarballs/ \
+    "https://github.com/joseluisq/macosx-sdks/releases/download/${MACOS_SDK_VERSION}/MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz"
+
+# Build OSXCross with ONLY the target architecture
+# This significantly reduces build time and image size
+RUN UNATTENDED=1 ENABLE_ARCHS="arm64 x86_64" OSX_VERSION_MIN=${MACOS_SDK_VERSION%.*}.0 ./build.sh
+
+# Build compiler-rt for the specific architecture
+RUN ENABLE_COMPILER_RT_INSTALL=1 ./build_compiler_rt.sh
+
+# Add OSXCross to PATH
+ENV PATH="/opt/osxcross/target/bin:${PATH}"
+ENV OSXCROSS_MP_INC=1
+
+# Enhance the toolchain.cmake with additional compilers
+RUN cat <<EOF1 >> /opt/osxcross/tools/toolchain.cmake
+set(CMAKE_OBJC_COMPILER "\${OSXCROSS_TARGET_DIR}/bin/\${OSXCROSS_HOST}-clang")
+set(CMAKE_OBJCXX_COMPILER "\${OSXCROSS_TARGET_DIR}/bin/\${OSXCROSS_HOST}-clang++")
+
+set(CMAKE_STRIP "\${OSXCROSS_TARGET_DIR}/bin/\${OSXCROSS_HOST}-strip")
+EOF1
+
+# Install ldid for code signing
+RUN git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid && \
+    cd /tmp/ldid && \
+    make CC=clang CXX=clang++ INSTALLPREFIX=/usr/local install && \
+    cd / && rm -rf /tmp/ldid && \
+    ldid --version || echo "ldid installed"
+
+ARG TARGETPLATFORM
+ARG TARGET_ARCH
+ENV TARGET_ARCH=${TARGET_ARCH}
+
+# Create convenience wrappers and CMake integration
+RUN ls -la /opt/osxcross/target/bin/ && \
+    ln -sf /opt/osxcross/target/bin/${TARGET_ARCH}-apple-*-cmake /opt/osxcross/target/bin/cmake && \
+    ln -sf /opt/osxcross/target/bin/${TARGET_ARCH}-apple-*-clang /opt/osxcross/target/bin/clang && \
+    ln -sf /opt/osxcross/target/bin/${TARGET_ARCH}-apple-*-clang++ /opt/osxcross/target/bin/clang++
+
+
+ENV TARGETPLATFORM=${TARGETPLATFORM}
+ENV OSXCROSS_TARGET=${TRIPLE}
+
+WORKDIR /workspace
+
+# Add a helpful script to show what's configured
+RUN cat <<'EOF' > /usr/local/bin/show-toolchain
+#!/bin/bash
+echo "=== Cross-Compilation Toolchain Info ==="
+echo "Target Platform: ${TARGETPLATFORM}"
+echo "Target Architecture: ${TARGET_ARCH}"
+echo "OSXCross Triple: ${OSXCROSS_TARGET}"
+echo "macOS SDK Version: ${MACOS_SDK_VERSION}"
+echo ""
+echo "Compilers:"
+echo "  CC:  ${CC}"
+echo "  CXX: ${CXX}"
+echo ""
+echo "CMake Toolchain: ${CMAKE_TOOLCHAIN_FILE}"
+echo ""
+echo "Available binaries:"
+ls -1 /opt/osxcross/target/bin/ | grep "^${OSXCROSS_TARGET}" | head -n 10
+EOF
+
+RUN chmod +x /usr/local/bin/show-toolchain
+
+# Label with build info
+LABEL com.dseif0x.target-platform="${TARGETPLATFORM}"
+LABEL com.dseif0x.target-arch="${TARGET_ARCH}"
+LABEL com.dseif0x.macos-sdk="${MACOS_SDK_VERSION}"
