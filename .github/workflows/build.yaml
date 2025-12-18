@@ -32,7 +32,8 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+      matrix: 
+        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
     
     steps:
       - name: Checkout
