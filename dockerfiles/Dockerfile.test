@@ -10,7 +10,11 @@ EOF
 
 
 RUN cat <<EOF1 > ./test.cpp
-int main() { return 0; }
+#include <iostream>
+int main() { 
+    std::cout << "Hello, Cross-Compiled World!" << std::endl;
+    return 0; 
+}
 EOF1
 
 RUN cmake -S . -B build && cmake --build build
