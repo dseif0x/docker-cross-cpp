@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     git \
     wget \
+    curl \
+    xz-utils \
     ninja-build \
     clang \
     lld \
@@ -14,42 +16,31 @@ RUN apt-get update && apt-get install -y \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
+ARG LLVM_MINGW_VERSION=20251216
+ARG TARGETARCH
+
+RUN case "${TARGETARCH}" in \
+        amd64) LLVM_MINGW_ARCH=x86_64 ;; \
+        arm64) LLVM_MINGW_ARCH=aarch64 ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac && \
+    curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VERSION}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-${LLVM_MINGW_ARCH}.tar.xz \
+    | tar -xJ -C /opt && \
+    mv /opt/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-${LLVM_MINGW_ARCH} /opt/llvm-mingw
+
+ENV PATH="/opt/llvm-mingw/bin:${PATH}"
+
 ARG CROSS_TRIPLE
 ARG TARGET_ARCHITECTURE
 
-# Install MinGW cross-compilation toolchain
-# Note: MinGW only supports x86_64 and i686, not ARM64
-RUN if [ "$TARGET_ARCHITECTURE" = "x86_64" ]; then \
-        apt-get update && apt-get install -y \
-            gcc-mingw-w64-x86-64 \
-            g++-mingw-w64-x86-64 \
-            binutils-mingw-w64-x86-64 \
-            mingw-w64-x86-64-dev \
-            mingw-w64-tools \
-            && rm -rf /var/lib/apt/lists/*; \
-    elif [ "$TARGET_ARCHITECTURE" = "i686" ]; then \
-        apt-get update && apt-get install -y \
-            gcc-mingw-w64-i686 \
-            g++-mingw-w64-i686 \
-            binutils-mingw-w64-i686 \
-            mingw-w64-i686-dev \
-            mingw-w64-tools \
-            && rm -rf /var/lib/apt/lists/*; \
-    elif [ "$TARGET_ARCHITECTURE" = "aarch64" ]; then \
-        echo "Not yet available on apt. Might need to build from source" && \
-        exit 1; \
-    else \
-        echo "ERROR: Unsupported architecture: $TARGET_ARCHITECTURE" && exit 1; \
-    fi
-
 # Verify compiler exists
-RUN test -f "/usr/bin/${CROSS_TRIPLE}-gcc" || \
-    (echo "Error: Compiler not found at /usr/bin/${CROSS_TRIPLE}-gcc" && exit 1)
+RUN test -f "/opt/llvm-mingw/bin/${CROSS_TRIPLE}-gcc" || \
+    (echo "Error: Compiler not found at /opt/llvm-mingw/bin/${CROSS_TRIPLE}-gcc" && exit 1)
 
 # Create convenience symlinks
-RUN ln -sf /usr/bin/${CROSS_TRIPLE}-gcc /usr/local/bin/cc && \
-    ln -sf /usr/bin/${CROSS_TRIPLE}-g++ /usr/local/bin/c++ && \
-    ln -sf /usr/bin/${CROSS_TRIPLE}-windres /usr/local/bin/windres
+RUN ln -sf /opt/llvm-mingw/bin/${CROSS_TRIPLE}-gcc /usr/local/bin/cc && \
+    ln -sf /opt/llvm-mingw/bin/${CROSS_TRIPLE}-g++ /usr/local/bin/c++ && \
+    ln -sf /opt/llvm-mingw/bin/${CROSS_TRIPLE}-windres /usr/local/bin/windres
 
 # Generate CMake toolchain file
 RUN mkdir -p /opt/toolchain && \

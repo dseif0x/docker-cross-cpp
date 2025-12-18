@@ -55,6 +55,8 @@ variable "TARGETS" {
       arch = "ppc64le"
       platform = "linux/ppc64le"
     }
+
+
     "windows-amd64" = {
       dockerfile = "Dockerfile.windows"
       triple = "x86_64-w64-mingw32"
@@ -67,6 +69,14 @@ variable "TARGETS" {
       arch = "i686"
       platform = "windows/386"
     }
+    "windows-arm64" = {
+      dockerfile = "Dockerfile.windows"
+      triple = "aarch64-w64-mingw32"
+      arch = "aarch64"
+      platform = "windows/arm64"
+    }
+
+
     "darwin-arm64" = {
       dockerfile = "Dockerfile.darwin"
       triple = "arm64-apple-darwin"
