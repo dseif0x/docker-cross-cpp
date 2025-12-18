@@ -65,14 +65,22 @@ RUN git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid && \
     cd / && rm -rf /tmp/ldid && \
     ldid --version || echo "ldid installed"
 
-ARG TARGET_ARCH
-ENV TARGET_ARCH=${TARGET_ARCH}
+ARG TARGET_ARCHITECTURE
+ENV TARGET_ARCHITECTURE=${TARGET_ARCHITECTURE}
 
 # Create convenience wrappers and CMake integration
-RUN ls -la /opt/osxcross/target/bin/ && \
-    ln -sf /opt/osxcross/target/bin/${TARGET_ARCHITECTURE}-apple-*-cmake /opt/osxcross/target/bin/cmake && \
-    ln -sf /opt/osxcross/target/bin/${TARGET_ARCHITECTURE}-apple-*-clang /opt/osxcross/target/bin/clang && \
-    ln -sf /opt/osxcross/target/bin/${TARGET_ARCHITECTURE}-apple-*-clang++ /opt/osxcross/target/bin/clang++
+RUN host=$(basename /opt/osxcross/target/bin/${TARGET_ARCHITECTURE}-apple-*-cmake | sed 's/-cmake$//') && \
+    cat > /opt/osxcross/target/bin/cmake <<EOF
+#!/usr/bin/env bash
+set -e
+dir="\$(dirname "\$0")"
+host="$host"
+eval "\$(\$dir/\$host-osxcross-conf)"
+export OSXCROSS_HOST="\$host"
+export CMAKE_TOOLCHAIN_FILE="\$OSXCROSS_TARGET_DIR/toolchain.cmake"
+exec /usr/bin/cmake "\$@"
+EOF
+RUN chmod +x /opt/osxcross/target/bin/cmake
 
 
 WORKDIR /workspace

@@ -80,3 +80,23 @@ target "cross-compiler" {
 group "default" {
   targets = ["cross-compiler"]
 }
+
+
+target "test" {
+  name = "test-${target_name}"
+  matrix = {
+    target_name = keys(TARGETS)
+  }
+  
+  dockerfile = "Dockerfile.test"
+
+  contexts = {
+    base = "target:${target_name}"
+  }
+  
+  args = {
+    CROSS_TRIPLE = TARGETS[target_name].triple
+    TARGET_ARCHITECTURE = TARGETS[target_name].arch
+    MACOS_SDK_VERSION = try(TARGETS[target_name].sdk, "")
+  }
+}

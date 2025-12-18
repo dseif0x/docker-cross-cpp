@@ -1,0 +1,17 @@
+FROM base
+
+RUN apt-get update && apt-get install -y file && rm -rf /var/lib/apt/lists/*
+
+RUN cat <<EOF > ./CMakeLists.txt
+cmake_minimum_required(VERSION 3.20)
+project(CompilerTest)
+add_executable(test_binary test.cpp)
+EOF
+
+
+RUN cat <<EOF1 > ./test.cpp
+int main() { return 0; }
+EOF1
+
+RUN cmake -S . -B build && cmake --build build
+RUN ls -l build && file build/test_binary* 
