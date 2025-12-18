@@ -108,7 +108,7 @@ target "cross-compiler" {
   }
   
   dockerfile = TARGETS[target_name].dockerfile
-  tags = ["${REGISTRY}/cross-cpp:target-${target_name}"]
+  tags = ["${REGISTRY}/cross-cpp-${TARGETS[target_name].platform}:latest"]
   
   args = {
     CROSS_TRIPLE = TARGETS[target_name].triple
