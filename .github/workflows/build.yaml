@@ -23,7 +23,7 @@ jobs:
         id: matrix
         with:
           files: docker-bake.hcl
-          targets: cross-compiler
+          target: cross-compiler
 
   build:
     needs: prepare
