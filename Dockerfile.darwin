@@ -46,15 +46,25 @@ RUN UNATTENDED=1 ENABLE_ARCHS="arm64 x86_64" OSX_VERSION_MIN=${MACOS_SDK_VERSION
 # Build compiler-rt for the specific architecture
 RUN ENABLE_COMPILER_RT_INSTALL=1 ./build_compiler_rt.sh
 
+# Install ldid for code signing
+RUN git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid && \
+    cd /tmp/ldid && \
+    make CC=clang CXX=clang++ INSTALLPREFIX=/usr/local install && \
+    cd / && rm -rf /tmp/ldid && \
+    ldid --version || echo "ldid installed"
+
 FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     ninja-build \
     cmake \
+    clang \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=base /opt/osxcross /opt/osxcross
+COPY --from=base /usr/local/bin/ldid /usr/local/bin/ldid
+
 # Add OSXCross to PATH
 ENV PATH="/opt/osxcross/target/bin:${PATH}"
 ENV OSXCROSS_MP_INC=1
@@ -67,12 +77,7 @@ set(CMAKE_OBJCXX_COMPILER "\${OSXCROSS_TARGET_DIR}/bin/\${OSXCROSS_HOST}-clang++
 set(CMAKE_STRIP "\${OSXCROSS_TARGET_DIR}/bin/\${OSXCROSS_HOST}-strip")
 EOF1
 
-# Install ldid for code signing
-RUN git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid && \
-    cd /tmp/ldid && \
-    make CC=clang CXX=clang++ INSTALLPREFIX=/usr/local install && \
-    cd / && rm -rf /tmp/ldid && \
-    ldid --version || echo "ldid installed"
+
 
 ARG TARGET_ARCHITECTURE
 ENV TARGET_ARCHITECTURE=${TARGET_ARCHITECTURE}
