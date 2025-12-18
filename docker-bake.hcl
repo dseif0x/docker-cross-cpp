@@ -37,6 +37,12 @@ variable "TARGETS" {
       arch = "riscv64"
       platform = "linux/riscv64"
     }
+    "linux-i686" = {
+      dockerfile = "Dockerfile.linux"
+      triple = "i686-linux-gnu"
+      arch = "i686"
+      platform = "linux/i686"
+    }
     "windows-amd64" = {
       dockerfile = "Dockerfile.windows"
       triple = "x86_64-w64-mingw32"
