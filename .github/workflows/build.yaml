@@ -10,15 +10,30 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Create matrix
+        uses: docker/bake-action/subaction/matrix@v6
+        id: matrix
+        with:
+          files: docker-bake.hcl
+          targets: cross-compiler
+
   build:
+    needs: prepare
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     strategy:
       fail-fast: false
-      matrix:
-        target: ${{ fromJson(needs.prepare.outputs.targets) }}
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     
     steps:
       - name: Checkout
@@ -37,22 +52,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push ${{ matrix.target }}
         uses: docker/bake-action@v6
         with:
           files: docker-bake.hcl
-          targets: cross-compiler
+          targets: ${{ matrix.target }}
           push: true
           set: |
-            *.cache-from=type=gha
-            *.cache-to=type=gha,mode=max
-
-  # Use bake-action's matrix feature
-  matrix:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate matrix
-        uses: docker/bake-action/subaction/matrix@v6
-        with:
-          target: cross-compiler
+            *.cache-from=type=gha,scope=build-${{ matrix.target }}
+            *.cache-to=type=gha,mode=max,scope=build-${{ matrix.target }}
