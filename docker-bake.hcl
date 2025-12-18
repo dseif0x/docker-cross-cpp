@@ -61,6 +61,12 @@ variable "TARGETS" {
       arch = "x86_64"
       platform = "windows/amd64"
     }
+    "windows-386" = {
+      dockerfile = "Dockerfile.windows"
+      triple = "i686-w64-mingw32"
+      arch = "i686"
+      platform = "windows/386"
+    }
     "darwin-arm64" = {
       dockerfile = "Dockerfile.darwin"
       triple = "arm64-apple-darwin"
