@@ -124,10 +124,11 @@ target "test" {
   }
   
   args = {
+    TARGET_NAME = target_name
     CROSS_TRIPLE = TARGETS[target_name].triple
     TARGET_ARCHITECTURE = TARGETS[target_name].arch
     MACOS_SDK_VERSION = try(TARGETS[target_name].sdk, "")
   }
 
-  output = ["test_output/${target_name}"]
+  output = ["test_output"]
 }

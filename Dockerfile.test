@@ -17,4 +17,5 @@ RUN cmake -S . -B build && cmake --build build
 RUN ls -l build && file build/test_binary* > /test_output.txt
 
 FROM scratch
-COPY --from=test /test_output.txt /test_output.txt
+ARG TARGET_NAME
+COPY --from=test /test_output.txt /${TARGET_NAME}_output.txt
