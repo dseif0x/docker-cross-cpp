@@ -129,5 +129,5 @@ target "test" {
     MACOS_SDK_VERSION = try(TARGETS[target_name].sdk, "")
   }
 
-  output = ["test_output"]
+  output = ["test_output/${target_name}"]
 }
