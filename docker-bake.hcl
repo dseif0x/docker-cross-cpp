@@ -129,6 +129,7 @@ group "default" {
 
 target "test" {
   name = "test-${target_name}"
+  inherits = ["platforms"]
   matrix = {
     target_name = keys(TARGETS)
   }

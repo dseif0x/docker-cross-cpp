@@ -18,5 +18,4 @@ RUN ls -l build && file build/test_binary* > /test_output.txt
 
 FROM scratch
 ARG TARGET_NAME
-ARG TARGETARCH
-COPY --from=test /test_output.txt /from-${TARGETARCH}_to-${TARGET_NAME}_output.txt
+COPY --from=test /test_output.txt /${TARGET_NAME}_output.txt
