@@ -14,43 +14,43 @@ target "platforms" {
 variable "TARGETS" {
   default = {
     "linux-amd64" = {
-      dockerfile = "Dockerfile.linux"
+      dockerfile = "dockerfiles/Dockerfile.linux"
       triple = "x86_64-linux-gnu"
       arch = "x86_64"
       platform = "linux/amd64"
     }
     "linux-arm64" = {
-      dockerfile = "Dockerfile.linux"
+      dockerfile = "dockerfiles/Dockerfile.linux"
       triple = "aarch64-linux-gnu"
       arch = "aarch64"
       platform = "linux/arm64"
     }
     "linux-armv7" = {
-      dockerfile = "Dockerfile.linux"
+      dockerfile = "dockerfiles/Dockerfile.linux"
       triple = "arm-linux-gnueabihf"
       arch = "arm"
       platform = "linux/arm/v7"
     }
     "linux-riscv64" = {
-      dockerfile = "Dockerfile.linux"
+      dockerfile = "dockerfiles/Dockerfile.linux"
       triple = "riscv64-linux-gnu"
       arch = "riscv64"
       platform = "linux/riscv64"
     }
     "linux-386" = {
-      dockerfile = "Dockerfile.linux"
+      dockerfile = "dockerfiles/Dockerfile.linux"
       triple = "i686-linux-gnu"
       arch = "i386"
       platform = "linux/386"
     }
     "linux-s390x" = {
-      dockerfile = "Dockerfile.linux"
+      dockerfile = "dockerfiles/Dockerfile.linux"
       triple = "s390x-linux-gnu"
       arch = "s390x"
       platform = "linux/s390x"
     }
     "linux-ppc64le" = {
-      dockerfile = "Dockerfile.linux"
+      dockerfile = "dockerfiles/Dockerfile.linux"
       triple = "powerpc64le-linux-gnu"
       arch = "ppc64le"
       platform = "linux/ppc64le"
@@ -58,25 +58,25 @@ variable "TARGETS" {
 
 
     "windows-amd64" = {
-      dockerfile = "Dockerfile.windows"
+      dockerfile = "dockerfiles/Dockerfile.windows"
       triple = "x86_64-w64-mingw32"
       arch = "x86_64"
       platform = "windows/amd64"
     }
     "windows-386" = {
-      dockerfile = "Dockerfile.windows"
+      dockerfile = "dockerfiles/Dockerfile.windows"
       triple = "i686-w64-mingw32"
       arch = "i686"
       platform = "windows/386"
     }
     "windows-arm64" = {
-      dockerfile = "Dockerfile.windows"
+      dockerfile = "dockerfiles/Dockerfile.windows"
       triple = "aarch64-w64-mingw32"
       arch = "aarch64"
       platform = "windows/arm64"
     }
     "windows-armv7" = {
-      dockerfile = "Dockerfile.windows"
+      dockerfile = "dockerfiles/Dockerfile.windows"
       triple = "armv7-w64-mingw32"
       arch = "armv7"
       platform = "windows/arm/v7"
@@ -84,14 +84,14 @@ variable "TARGETS" {
 
 
     "darwin-arm64" = {
-      dockerfile = "Dockerfile.darwin"
+      dockerfile = "dockerfiles/Dockerfile.darwin"
       triple = "arm64-apple-darwin"
       arch = "arm64"
       platform = "darwin/arm64"
       sdk = "26.1"
     }
     "darwin-amd64" = {
-      dockerfile = "Dockerfile.darwin"
+      dockerfile = "dockerfiles/Dockerfile.darwin"
       triple = "x86_64-apple-darwin"
       arch = "x86_64"
       platform = "darwin/amd64"
@@ -134,7 +134,7 @@ target "test" {
     target_name = keys(TARGETS)
   }
   
-  dockerfile = "Dockerfile.test"
+  dockerfile = "dockerfiles/Dockerfile.test"
 
   contexts = {
     base = "target:${target_name}"
