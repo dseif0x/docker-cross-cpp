@@ -36,8 +36,7 @@ RUN if [ "$TARGET_ARCHITECTURE" = "x86_64" ]; then \
             mingw-w64-tools \
             && rm -rf /var/lib/apt/lists/*; \
     elif [ "$TARGET_ARCHITECTURE" = "aarch64" ]; then \
-        echo "ERROR: MinGW does not support Windows ARM64 cross-compilation yet." && \
-        echo "For Windows ARM64, you need to use LLVM/Clang with appropriate Windows SDK." && \
+        echo "Not yet available on apt. Might need to build from source" && \
         exit 1; \
     else \
         echo "ERROR: Unsupported architecture: $TARGET_ARCHITECTURE" && exit 1; \
