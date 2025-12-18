@@ -107,8 +107,6 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 set(CMAKE_C_FLAGS_INIT "")
 set(CMAKE_CXX_FLAGS_INIT "")
 
-# Add sysroot if needed
-set(CMAKE_SYSROOT /usr/${CROSS_TRIPLE})
 EOF
 
 ENV CMAKE_TOOLCHAIN_FILE=/opt/toolchain/toolchain.cmake

@@ -14,4 +14,4 @@ int main() { return 0; }
 EOF1
 
 RUN cmake -S . -B build && cmake --build build
-RUN ls -l build && file build/test_binary* 
+RUN ls -l build && file build/test_binary* && exit 1
