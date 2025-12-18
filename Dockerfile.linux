@@ -112,22 +112,3 @@ ENV RANLIB=${CROSS_TRIPLE}-ranlib
 ENV STRIP=${CROSS_TRIPLE}-strip
 
 WORKDIR /workspace
-
-# Add a helpful script to show what's configured
-RUN cat <<'EOF' > /usr/local/bin/show-toolchain
-#!/bin/bash
-echo "=== Cross-Compilation Toolchain Info ==="
-echo "Target Architecture: ${TARGET_ARCHITECTURE}"
-echo "Cross Triple: ${CROSS_TRIPLE}"
-echo ""
-echo "Compilers:"
-echo "  CC:  ${CC}"
-echo "  CXX: ${CXX}"
-echo ""
-echo "CMake Toolchain: ${CMAKE_TOOLCHAIN_FILE}"
-echo ""
-echo "Compiler version:"
-${CC} --version | head -n 1
-EOF
-
-RUN chmod +x /usr/local/bin/show-toolchain
