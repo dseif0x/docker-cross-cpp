@@ -1,1 +1,5 @@
-int main() { return 0; }
+#include <iostream>
+int main() { 
+    std::cout << "Hello, Cross-Compiled World!" << std::endl;
+    return 0; 
+}
