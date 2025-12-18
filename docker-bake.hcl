@@ -75,6 +75,12 @@ variable "TARGETS" {
       arch = "aarch64"
       platform = "windows/arm64"
     }
+    "windows-armv7" = {
+      dockerfile = "Dockerfile.windows"
+      triple = "armv7-w64-mingw32"
+      arch = "armv7"
+      platform = "windows/arm/v7"
+    }
 
 
     "darwin-arm64" = {
