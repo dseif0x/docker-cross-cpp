@@ -5,14 +5,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Common build tools
 RUN apt-get update && apt-get install -y \
     ca-certificates \
-    git \
-    wget \
     curl \
     xz-utils \
     ninja-build \
-    clang \
-    lld \
-    pkg-config \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
