@@ -50,8 +50,7 @@ RUN ENABLE_COMPILER_RT_INSTALL=1 ./build_compiler_rt.sh
 RUN git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid && \
     cd /tmp/ldid && \
     make CC=clang CXX=clang++ INSTALLPREFIX=/usr/local install && \
-    cd / && rm -rf /tmp/ldid && \
-    ldid --version
+    cd / && rm -rf /tmp/ldid
 
 # TODO Multistage and only copy the necessary files to reduce image size
 
