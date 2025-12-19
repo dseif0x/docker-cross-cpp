@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 
+FROM ubuntu:24.04 AS build
 RUN apt update \
 && apt install -y  \
     ca-certificates  \
@@ -29,7 +29,7 @@ RUN apt update \
 
 # Setup OSXCross for macOS builds
 WORKDIR /opt
-RUN git clone https://github.com/tpoechtrager/osxcross.git
+RUN git clone https://github.com/tpoechtrager/osxcross.git --depth 1
 
 WORKDIR /opt/osxcross
 
@@ -53,20 +53,20 @@ RUN git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid && \
     cd / && rm -rf /tmp/ldid
 
 # TODO Multistage and only copy the necessary files to reduce image size
+FROM ubuntu:24.04
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    ninja-build \
+    cmake \
+    clang \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /opt/osxcross/target /opt/osxcross/target
+COPY --from=build /usr/local/bin/ldid /usr/local/bin/ldid
 
 # Add OSXCross to PATH
 ENV PATH="/opt/osxcross/target/bin:${PATH}"
 ENV OSXCROSS_MP_INC=1
-
-# Enhance the toolchain.cmake with additional compilers
-RUN cat <<EOF1 >> /opt/osxcross/tools/toolchain.cmake
-set(CMAKE_OBJC_COMPILER "\${OSXCROSS_TARGET_DIR}/bin/\${OSXCROSS_HOST}-clang")
-set(CMAKE_OBJCXX_COMPILER "\${OSXCROSS_TARGET_DIR}/bin/\${OSXCROSS_HOST}-clang++")
-
-set(CMAKE_STRIP "\${OSXCROSS_TARGET_DIR}/bin/\${OSXCROSS_HOST}-strip")
-EOF1
-
-
 
 ARG TARGET_ARCHITECTURE
 ENV TARGET_ARCHITECTURE=${TARGET_ARCHITECTURE}
