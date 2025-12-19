@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS base 
+FROM ubuntu:24.04 
 RUN apt update \
 && apt install -y  \
     ca-certificates  \
@@ -51,19 +51,9 @@ RUN git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid && \
     cd /tmp/ldid && \
     make CC=clang CXX=clang++ INSTALLPREFIX=/usr/local install && \
     cd / && rm -rf /tmp/ldid && \
-    ldid --version || echo "ldid installed"
+    ldid --version
 
-FROM ubuntu:24.04
-
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    ninja-build \
-    cmake \
-    clang \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY --from=base /opt/osxcross /opt/osxcross
-COPY --from=base /usr/local/bin/ldid /usr/local/bin/ldid
+# TODO Multistage and only copy the necessary files to reduce image size
 
 # Add OSXCross to PATH
 ENV PATH="/opt/osxcross/target/bin:${PATH}"
