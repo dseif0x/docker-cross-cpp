@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
-ARG LLVM_MINGW_VERSION=20251216
+ARG LLVM_MINGW_VERSION=20260324
 ARG TARGETARCH
 
 RUN case "${TARGETARCH}" in \
