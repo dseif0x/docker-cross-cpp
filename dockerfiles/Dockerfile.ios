@@ -1,0 +1,191 @@
+FROM ubuntu:24.04 AS build
+
+RUN apt update \
+&& apt install -y \
+    ca-certificates \
+    gpg \
+    git \
+    wget \
+    unzip \
+    software-properties-common \
+    lsb-release \
+    ninja-build \
+    clang lld \
+    pkg-config \
+    cmake \
+    libxml2-dev \
+    libssl-dev \
+    bash \
+    patch \
+    make \
+    tar \
+    xz-utils \
+    bzip2 \
+    gzip \
+    sed \
+    cpio \
+    libbz2-dev \
+    zlib1g-dev \
+    libplist-dev \
+    libplist++-dev
+
+# Build osxcross (we need its cctools/ld64 for iOS linking too)
+WORKDIR /opt
+RUN git clone https://github.com/tpoechtrager/osxcross.git --depth 1
+
+WORKDIR /opt/osxcross
+
+ARG MACOS_SDK_VERSION=26.1
+
+# We still need a macOS SDK to build osxcross itself; it won't be used for compiling
+RUN wget -P tarballs/ \
+    "https://github.com/joseluisq/macosx-sdks/releases/download/${MACOS_SDK_VERSION}/MacOSX${MACOS_SDK_VERSION}.sdk.tar.xz" && \
+    UNATTENDED=1 ENABLE_ARCHS="arm64 x86_64" OSX_VERSION_MIN=${MACOS_SDK_VERSION%.*}.0 ./build.sh && \
+    ENABLE_COMPILER_RT_INSTALL=1 ./build_compiler_rt.sh && \
+    mv /opt/osxcross/target /opt/osxout && rm -rf /opt/osxcross/*
+
+# Download iOS SDK
+ARG IOS_SDK_VERSION=26.1
+RUN mkdir -p /opt/osxout/SDK && \
+    wget -O /tmp/iPhoneOS.sdk.zip \
+    "https://github.com/xybp888/iOS-SDKs/releases/download/iOS${IOS_SDK_VERSION}-SDKs/iPhoneOS${IOS_SDK_VERSION}.sdk.zip" && \
+    unzip -q /tmp/iPhoneOS.sdk.zip -d /tmp/sdk && \
+    mv "/tmp/sdk/iPhoneOS${IOS_SDK_VERSION}.sdk" /opt/osxout/SDK/iPhoneOS.sdk && \
+    rm -rf /tmp/iPhoneOS.sdk.zip /tmp/sdk
+
+# Install ldid for code signing (needed for iOS binaries)
+RUN git clone https://github.com/ProcursusTeam/ldid.git /tmp/ldid && \
+    cd /tmp/ldid && \
+    make CC=clang CXX=clang++ INSTALLPREFIX=/usr/local install && \
+    cd / && rm -rf /tmp/ldid
+
+# Write the iOS CMake toolchain file
+RUN cat > /opt/osxout/ios-toolchain.cmake <<'EOF'
+# iOS cross-compilation toolchain - bypasses osxcross wrapper
+cmake_minimum_required(VERSION 3.19)
+
+macro(ios_getconf VAR)
+  if(NOT ${VAR})
+    set(${VAR} "$ENV{${VAR}}")
+    if(${VAR})
+      set(${VAR} "${${VAR}}" CACHE STRING "${VAR}")
+      message(STATUS "Found ${VAR}: ${${VAR}}")
+    else()
+      message(FATAL_ERROR "Cannot determine \"${VAR}\"")
+    endif()
+  endif()
+endmacro()
+
+ios_getconf(OSXCROSS_TARGET_DIR)
+ios_getconf(IOS_SDK)
+ios_getconf(IOS_DEPLOYMENT_TARGET)
+ios_getconf(IOS_ARCH)
+
+set(CMAKE_SYSTEM_NAME Darwin)
+set(CMAKE_SYSTEM_PROCESSOR ${IOS_ARCH})
+
+# Find the real clang - NOT the osxcross wrapper
+# The wrapper lives at ${OSXCROSS_TARGET_DIR}/bin/arm64-apple-darwin*-clang
+# The real clang is the system one (or whichever clang osxcross was built against)
+find_program(_REAL_CLANG   NAMES clang   PATHS /usr/bin /usr/local/bin NO_DEFAULT_PATH)
+find_program(_REAL_CLANGXX NAMES clang++ PATHS /usr/bin /usr/local/bin NO_DEFAULT_PATH)
+
+if(NOT _REAL_CLANG)
+  message(FATAL_ERROR "Cannot find system clang - needed to bypass osxcross wrapper")
+endif()
+
+set(CMAKE_C_COMPILER   "${_REAL_CLANG}"   CACHE FILEPATH "C compiler")
+set(CMAKE_CXX_COMPILER "${_REAL_CLANGXX}" CACHE FILEPATH "C++ compiler")
+set(CMAKE_OBJC_COMPILER   "${_REAL_CLANG}"   CACHE FILEPATH "ObjC compiler")
+set(CMAKE_OBJCXX_COMPILER "${_REAL_CLANGXX}" CACHE FILEPATH "ObjC++ compiler")
+
+# Target triple - pure iOS, no darwin/macos involved
+set(_IOS_TRIPLE "${IOS_ARCH}-apple-ios${IOS_DEPLOYMENT_TARGET}")
+set(CMAKE_C_COMPILER_TARGET   "${_IOS_TRIPLE}")
+set(CMAKE_CXX_COMPILER_TARGET "${_IOS_TRIPLE}")
+set(CMAKE_OBJC_COMPILER_TARGET   "${_IOS_TRIPLE}")
+set(CMAKE_OBJCXX_COMPILER_TARGET "${_IOS_TRIPLE}")
+
+# Use osxcross ld64 as the linker (this is the key - we want Apple's linker, not lld)
+# The ld binary from cctools-port understands iOS Mach-O
+file(GLOB _LD_CANDIDATES "${OSXCROSS_TARGET_DIR}/bin/arm64-apple-darwin*-ld")
+list(GET _LD_CANDIDATES 0 _LD_PATH)
+get_filename_component(_LD_DIR "${_LD_PATH}" DIRECTORY)
+
+set(CMAKE_EXE_LINKER_FLAGS_INIT    "-fuse-ld=${_LD_PATH} -isysroot ${IOS_SDK}")
+set(CMAKE_SHARED_LINKER_FLAGS_INIT "-fuse-ld=${_LD_PATH} -isysroot ${IOS_SDK}")
+set(CMAKE_MODULE_LINKER_FLAGS_INIT "-fuse-ld=${_LD_PATH} -isysroot ${IOS_SDK}")
+
+# ar/ranlib/lipo from osxcross cctools
+file(GLOB _AR_CANDIDATES     "${OSXCROSS_TARGET_DIR}/bin/arm64-apple-darwin*-ar")
+file(GLOB _RANLIB_CANDIDATES "${OSXCROSS_TARGET_DIR}/bin/arm64-apple-darwin*-ranlib")
+file(GLOB _INT_CANDIDATES    "${OSXCROSS_TARGET_DIR}/bin/arm64-apple-darwin*-install_name_tool")
+list(GET _AR_CANDIDATES     0 _AR)
+list(GET _RANLIB_CANDIDATES 0 _RANLIB)
+list(GET _INT_CANDIDATES    0 _INSTALL_NAME_TOOL)
+
+set(CMAKE_AR      "${_AR}"     CACHE FILEPATH "ar")
+set(CMAKE_RANLIB  "${_RANLIB}" CACHE FILEPATH "ranlib")
+set(CMAKE_INSTALL_NAME_TOOL "${_INSTALL_NAME_TOOL}" CACHE FILEPATH "install_name_tool")
+
+set(CMAKE_SYSROOT   "${IOS_SDK}" CACHE PATH "iOS sysroot")
+# Deliberately do NOT set CMAKE_OSX_SYSROOT or CMAKE_OSX_DEPLOYMENT_TARGET
+# to avoid CMake injecting -mmacosx-version-min
+
+set(CMAKE_OSX_ARCHITECTURES "${IOS_ARCH}" CACHE STRING "")
+
+set(CMAKE_FIND_ROOT_PATH "${IOS_SDK}" "${OSXCROSS_TARGET_DIR}")
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+EOF
+
+# ── Final image ───────────────────────────────────────────────────────────────
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    ninja-build \
+    cmake \
+    clang \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /opt/osxout /opt/osxcross/target
+COPY --from=build /usr/local/bin/ldid /usr/local/bin/ldid
+
+ENV PATH="/opt/osxcross/target/bin:${PATH}"
+ENV OSXCROSS_MP_INC=1
+
+ARG IOS_SDK_VERSION=18.2
+ARG IOS_DEPLOYMENT_TARGET=16.0
+ARG IOS_ARCH=arm64
+
+ENV IOS_SDK_VERSION=${IOS_SDK_VERSION}
+ENV IOS_DEPLOYMENT_TARGET=${IOS_DEPLOYMENT_TARGET}
+ENV IOS_ARCH=${IOS_ARCH}
+ENV IOS_SDK=/opt/osxcross/target/SDK/iPhoneOS.sdk
+ENV OSXCROSS_TARGET_DIR=/opt/osxcross/target
+
+# cmake wrapper — mirrors your macOS one, sets all required env vars
+RUN cat > /opt/osxcross/target/bin/cmake <<'EOF'
+#!/usr/bin/env bash
+set -e
+dir="$(dirname "$0")"
+
+# Pick the arm64 darwin host triple dynamically
+host=$(basename "$(ls "${dir}"/arm64-apple-darwin*-clang 2>/dev/null | head -1)" | sed 's/-clang$//')
+
+export OSXCROSS_HOST="${host}"
+export OSXCROSS_TARGET_DIR="${OSXCROSS_TARGET_DIR:-/opt/osxcross/target}"
+export IOS_SDK="${IOS_SDK:-${OSXCROSS_TARGET_DIR}/SDK/iPhoneOS.sdk}"
+export IOS_DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET:-16.0}"
+export IOS_ARCH="${IOS_ARCH:-arm64}"
+export CMAKE_TOOLCHAIN_FILE="${OSXCROSS_TARGET_DIR}/ios-toolchain.cmake"
+
+exec /usr/bin/cmake "$@"
+EOF
+RUN chmod +x /opt/osxcross/target/bin/cmake
+
+WORKDIR /workspace
