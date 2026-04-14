@@ -83,6 +83,15 @@ variable "TARGETS" {
     }
 
 
+    "ios-arm64" = {
+      dockerfile = "dockerfiles/Dockerfile.ios"
+      triple = "arm64-apple-ios"
+      arch = "arm64"
+      platform = "ios/arm64"
+      sdk = "26.1"
+    }
+
+
     "darwin-arm64" = {
       dockerfile = "dockerfiles/Dockerfile.darwin"
       triple = "arm64-apple-darwin"
@@ -114,12 +123,14 @@ target "cross-compiler" {
     CROSS_TRIPLE = TARGETS[target_name].triple
     TARGET_ARCHITECTURE = TARGETS[target_name].arch
     MACOS_SDK_VERSION = try(TARGETS[target_name].sdk, "")
+    IOS_SDK_VERSION = try(TARGETS[target_name].sdk, "")
   }
-  
+
   labels = {
     "com.dseif0x.target-platform" = TARGETS[target_name].platform
     "com.dseif0x.cross-triple" = TARGETS[target_name].triple
     "com.dseif0x.macos-sdk" = try(TARGETS[target_name].sdk, "")
+    "com.dseif0x.ios-sdk" = try(TARGETS[target_name].sdk, "")
   }
 }
 
