@@ -19,6 +19,6 @@ target "linux-kernel" {
     output   = ["build"]
 
     args = {
-        KERNEL_VERSION = "v7.0"
+        KERNEL_VERSION = "v6.6"
     }
 }
