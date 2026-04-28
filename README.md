@@ -38,9 +38,10 @@ Images are published to `ghcr.io/dseif0x/cross-cpp-<platform>:latest` for the fo
 - `windows/amd64`, `windows/386`, `windows/arm64`, `windows/arm/v7`
 - `darwin/amd64`, `darwin/arm64`
 
-## Example
+## Examples
 
-See the [example/](example/) directory for a complete working example that builds a C++ binary for multiple platforms.
+- [example/](example/) – builds a simple C++ binary for multiple platforms.
+- [example-linux-kernel/](example-linux-kernel/) – cross-compiles the Linux kernel for multiple architectures. The kernel source is shallow-cloned at build time and is not stored in this repository.
 
 ## Building the Images
 
