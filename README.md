@@ -12,6 +12,7 @@ The project builds specialized Docker images for each target platform:
 - **Linux targets**: Uses GCC cross-compilation toolchains for amd64, arm64, armv7, riscv64, 386, s390x, and ppc64le
 - **Windows targets**: Uses llvm-mingw for amd64, 386, arm64, and armv7
 - **macOS targets**: Uses OSXCross for amd64 and arm64
+- **iOS targets**: Uses clang with the iOS SDK and OSXCross cctools (ld64) for arm64
 
 Each image includes:
 - Cross-compilation toolchain
@@ -37,6 +38,7 @@ Images are published to `ghcr.io/dseif0x/cross-cpp-<platform>:latest` for the fo
 - `linux/riscv64`, `linux/386`, `linux/s390x`, `linux/ppc64le`
 - `windows/amd64`, `windows/386`, `windows/arm64`, `windows/arm/v7`
 - `darwin/amd64`, `darwin/arm64`
+- `ios/arm64`
 
 ## Examples
 

@@ -9,6 +9,7 @@ target "platforms" {
         "linux/riscv64",
         "darwin/amd64",
         "darwin/arm64",
+        "ios/arm64",
         "windows/amd64",
         "windows/386",
         "windows/arm64",
