@@ -23,6 +23,7 @@ This will create binaries in the `build/` directory for:
 - Linux: amd64, arm64, armv7, 386, riscv64, s390x, ppc64le
 - Windows: amd64, 386, arm64, armv7
 - Macos: amd64, arm64
+- iOS: arm64
 
 ### Building for Specific Platforms
 
@@ -84,5 +85,6 @@ build/
 
 - The images include CMake 3.20+ and Ninja build system
 - CMake toolchain files are pre-configured for each platform
-- For macOS targets, you may need to adjust the SDK version in the main `docker-bake.hcl`
+- For macOS and iOS targets, you may need to adjust the SDK version in the main `docker-bake.hcl`
+- iOS binaries are unsigned; use the bundled `ldid` (e.g. `ldid -S test_binary`) or codesign on a Mac before deploying to a device
 - Windows binaries are built with llvm-mingw and target Windows 7+
