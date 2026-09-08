@@ -28,10 +28,18 @@ RUN apt update \
     libplist++-dev
 
 # Setup OSXCross for macOS builds
-WORKDIR /opt
-RUN git clone https://github.com/tpoechtrager/osxcross.git --depth 1
-
+#
+# osxcross is pinned to an exact commit. Its master branch was rewritten in
+# July 2026 (osxcross 3.0: build flavors, new CMake launcher contract, ...),
+# which silently changed what an unpinned `git clone` produced and broke the
+# cmake wrapper below. e6ab3fa is the last commit before that rewrite and is
+# what the last known-good published images were built from.
+# Bump this deliberately and run the `test` bake target before publishing.
+ARG OSXCROSS_COMMIT=e6ab3fa7423f9235ce9ed6381d6d3af191b46b59
 WORKDIR /opt/osxcross
+RUN git init -q . && \
+    git fetch -q --depth 1 https://github.com/tpoechtrager/osxcross.git "${OSXCROSS_COMMIT}" && \
+    git checkout -q FETCH_HEAD
 
 ARG MACOS_SDK_VERSION=26.1
 
@@ -75,6 +83,10 @@ dir="\$(dirname "\$0")"
 host="$host"
 eval "\$(\$dir/\$host-osxcross-conf)"
 export OSXCROSS_HOST="\$host"
+# osxcross >= 3.0 requires the launcher to select the compilers via these
+# variables (its toolchain.cmake fails otherwise); older versions ignore them.
+export OSXCROSS_C_COMPILER="\${OSXCROSS_C_COMPILER:-clang}"
+export OSXCROSS_CXX_COMPILER="\${OSXCROSS_CXX_COMPILER:-clang++}"
 export CMAKE_TOOLCHAIN_FILE="\$OSXCROSS_TARGET_DIR/toolchain.cmake"
 exec /usr/bin/cmake "\$@"
 EOF
