@@ -49,6 +49,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Gate: compile a hello-world with the freshly built image before anything
+      # is pushed, so a silently broken toolchain can't overwrite :latest.
+      # Only the native (amd64) platform is tested; its layers are reused from
+      # the builder cache by the push step below.
+      - name: Test ${{ matrix.target }}
+        uses: docker/bake-action@v6
+        with:
+          files: docker-bake.hcl
+          targets: test-${{ matrix.target }}
+          set: |
+            *.platform=linux/amd64
+            *.cache-from=type=gha,scope=build-${{ matrix.target }}
+
+      - name: Show test output
+        run: cat test_output/*_output.txt
+
       - name: Build and push ${{ matrix.target }}
         uses: docker/bake-action@v6
         with:

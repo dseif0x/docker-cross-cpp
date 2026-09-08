@@ -59,6 +59,16 @@ To build specific targets:
 docker buildx bake linux-amd64 windows-amd64 darwin-arm64
 ```
 
+To smoke-test an image (compiles a hello-world inside it and writes the result of `file` to `test_output/`):
+
+```bash
+docker buildx bake test-darwin-arm64
+```
+
+### Pinned dependencies
+
+The macOS and iOS images build [osxcross](https://github.com/tpoechtrager/osxcross) from a pinned commit (`OSXCROSS_COMMIT` build arg in `dockerfiles/Dockerfile.darwin` and `dockerfiles/Dockerfile.ios`). Upstream rewrote osxcross in July 2026 (3.0), which changed the CMake launcher contract; bump the pin deliberately and run the `test` bake target before publishing.
+
 ## License
 
 See LICENSE file for details.
