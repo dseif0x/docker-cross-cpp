@@ -1,8 +1,14 @@
+ARG KERNEL_VERSION=v6.6
+
+FROM --platform=$BUILDPLATFORM alpine AS pull-kernel
+ARG KERNEL_VERSION
+RUN apk add --no-cache git && \
+    git clone --depth=1 --branch ${KERNEL_VERSION} \
+    https://github.com/torvalds/linux.git /linux
+
 FROM --platform=$BUILDPLATFORM ghcr.io/dseif0x/cross-cpp-$TARGETPLATFORM:latest AS build
 
-# Install Linux kernel build dependencies
 RUN apt-get update && apt-get install -y \
-    git \
     bc \
     flex \
     bison \
@@ -11,19 +17,13 @@ RUN apt-get update && apt-get install -y \
     make \
     && rm -rf /var/lib/apt/lists/*
 
-# Shallow clone the Linux kernel at the specified version tag
-ARG KERNEL_VERSION=v6.6
-RUN git clone --depth=1 --branch ${KERNEL_VERSION} \
-    https://github.com/torvalds/linux.git /linux
+COPY --from=pull-kernel /linux /linux
 
 WORKDIR /linux
 
-# Pre-defined Docker build args for the target platform
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-# Map Docker TARGETARCH to the Linux kernel ARCH name, derive CROSS_COMPILE
-# from the CC environment variable set by the cross-cpp image, then build.
 RUN case "${TARGETARCH}" in \
     amd64)   KERNEL_ARCH=x86_64  ; KERNEL_IMAGE=arch/x86/boot/bzImage   ;; \
     arm64)   KERNEL_ARCH=arm64   ; KERNEL_IMAGE=arch/arm64/boot/Image    ;; \

@@ -86,7 +86,9 @@ ios_getconf(IOS_SDK)
 ios_getconf(IOS_DEPLOYMENT_TARGET)
 ios_getconf(IOS_ARCH)
 
-set(CMAKE_SYSTEM_NAME Darwin)
+# iOS, not Darwin: CMake then lays .app bundles out flat and projects that
+# branch on the system name (SDL, Jolt, ...) take their iOS paths.
+set(CMAKE_SYSTEM_NAME iOS)
 set(CMAKE_SYSTEM_PROCESSOR ${IOS_ARCH})
 
 # Use the host clang directly - NOT the osxcross wrapper (which targets macOS)
@@ -128,11 +130,15 @@ set(CMAKE_AR      "${_AR}"     CACHE FILEPATH "ar")
 set(CMAKE_RANLIB  "${_RANLIB}" CACHE FILEPATH "ranlib")
 set(CMAKE_INSTALL_NAME_TOOL "${_INSTALL_NAME_TOOL}" CACHE FILEPATH "install_name_tool")
 
-# Apple's driver wants -isysroot (also translated to -syslibroot for ld64)
-set(CMAKE_C_FLAGS_INIT      "-isysroot ${IOS_SDK}")
-set(CMAKE_CXX_FLAGS_INIT    "-isysroot ${IOS_SDK}")
-set(CMAKE_OBJC_FLAGS_INIT   "-isysroot ${IOS_SDK}")
-set(CMAKE_OBJCXX_FLAGS_INIT "-isysroot ${IOS_SDK}")
+# Apple's driver wants -isysroot (also translated to -syslibroot for ld64).
+# The SDK's SubFrameworks directory is a framework search path too: UIKit's
+# headers include UIUtilities from there, which Apple's clang driver adds
+# implicitly and the host clang does not.
+set(_IOS_SUBFW "-iframework ${IOS_SDK}/System/Library/SubFrameworks")
+set(CMAKE_C_FLAGS_INIT      "-isysroot ${IOS_SDK} ${_IOS_SUBFW}")
+set(CMAKE_CXX_FLAGS_INIT    "-isysroot ${IOS_SDK} ${_IOS_SUBFW}")
+set(CMAKE_OBJC_FLAGS_INIT   "-isysroot ${IOS_SDK} ${_IOS_SUBFW}")
+set(CMAKE_OBJCXX_FLAGS_INIT "-isysroot ${IOS_SDK} ${_IOS_SUBFW}")
 set(CMAKE_ASM_FLAGS_INIT    "-isysroot ${IOS_SDK}")
 
 # Link with the cctools ld64 (Apple's linker) instead of the host linker
@@ -141,9 +147,10 @@ set(CMAKE_SHARED_LINKER_FLAGS_INIT "--ld-path=${_LD_PATH} -isysroot ${IOS_SDK}")
 set(CMAKE_MODULE_LINKER_FLAGS_INIT "--ld-path=${_LD_PATH} -isysroot ${IOS_SDK}")
 
 set(CMAKE_SYSROOT "${IOS_SDK}" CACHE PATH "iOS sysroot")
-# Deliberately do NOT set CMAKE_OSX_SYSROOT or CMAKE_OSX_DEPLOYMENT_TARGET
-# to avoid CMake injecting -mmacosx-version-min (the deployment target is
-# encoded in the -target triple instead)
+# With the system name iOS, CMake's sysroot / deployment-target handling emits
+# -miphoneos-version-min (consistent with the triple), so both are set.
+set(CMAKE_OSX_SYSROOT "${IOS_SDK}" CACHE PATH "")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}" CACHE STRING "")
 
 set(CMAKE_OSX_ARCHITECTURES "${IOS_ARCH}" CACHE STRING "")
 
